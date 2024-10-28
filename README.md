@@ -1,6 +1,8 @@
 # NightForceWP
 NightForceWP, представляет собой инструмент для брутфорс-атаки на WordPress-сайты, позволяя пользователю пытаться подобрать логин и пароль для входа в систему
 
+ВНИМАНИЕ! Утилита используется в обучающих целях
+
 Инструкция по установке:
 1. git clone https://github.com/MorozovOne/NightForceWP
 2. cd NightFroceWP
@@ -16,6 +18,8 @@ python nightforce.py --usernames user.txt --passwords pass.txt --url "https://ex
 ENGLISH ==============
 #NightForceWP
 NightForceWP is a tool for brute force attacks on WordPress sites, allowing the user to try to guess the username and password to log in to the system.
+
+ATTENTION! The utility is used for educational purposes
 
 Installation instructions:
 1. git clone https://github.com/MorozovOne/NightForceWP
