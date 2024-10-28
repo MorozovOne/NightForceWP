@@ -38,13 +38,15 @@ banner = """
 ██║╚████║██║██║░░╚██╗██╔══██║░░░██║░░░██╔══╝░░██║░░██║██╔══██╗██║░░██╗██╔══╝░░░░████╔═████║░██╔═══╝░
 ██║░╚███║██║╚██████╔╝██║░░██║░░░██║░░░██║░░░░░╚█████╔╝██║░░██║╚█████╔╝███████╗░░╚██╔╝░╚██╔╝░██║░░░░░
 ╚═╝░░╚══╝╚═╝░╚═════╝░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░░░░░╚════╝░╚═╝░░╚═╝░╚════╝░╚══════╝░░░╚═╝░░░╚═╝░░╚═╝░░░░░
-      NIGHTFORCEWP v.1.2         ~MidN1ght~
-      EXAMPLE:
-      python nightforce.py --usernames user.txt --passwords pass.txt --url "https://example.com/ --use-proxies"
-      -u --usernames   wordlist username
-      -p --passwords   wordlist passwords
-      --url            "https://example.com/" 
-      --use-proxies    on/off list proxies in script
+
+
+NIGHTFORCEWP v.1.0.1       Author: ~MidN1ght~
+EXAMPLE:
+python nightforce.py --usernames user.txt --passwords pass.txt --url "https://example.com/ --use-proxies"
+-u --usernames   wordlist username
+-p --passwords   wordlist passwords
+--url            "https://example.com/" 
+--use-proxies    on/off list proxies in script
 """
 
 print(banner)
