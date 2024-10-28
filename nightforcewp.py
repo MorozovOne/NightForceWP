@@ -118,6 +118,21 @@ user_queue = []
 password_queue = []
 results_log = []
 
+# Функция для отображения индикатора загрузки
+def loading_indicator():
+    for i in range(101):
+        sys.stdout.write(f"\rChecking proxies: {i}% [{'=' * (i // 2)}{'-' * (50 - (i // 2))}]")
+        sys.stdout.flush()
+        time.sleep(0.1)  # Задержка для демонстрации
+
+def check_proxies(proxies):
+    """Проверяет работоспособность прокси и возвращает рабочие прокси."""
+    working_proxies = []
+    for proxy in proxies:
+        if check_proxy(proxy):
+            working_proxies.append(proxy)
+    return working_proxies
+
 def check_proxy(proxy):
     """Проверяет работоспособность прокси и возвращает True, если работает."""
     try:
@@ -198,7 +213,10 @@ def main():
         return
 
     if use_proxies:
-        proxies = [proxy for proxy in proxies if check_proxy(proxy)]
+        loading_thread = Thread(target=loading_indicator)
+        loading_thread.start()
+        proxies = check_proxies(proxies)
+        loading_thread.join()
         if not proxies:
             logging.warning("No working proxies found. Continuing without proxies.")
             use_proxies = False
@@ -217,7 +235,7 @@ def main():
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = [
-            executor.submit(brute_force, args.url, user, password, attempts_limit)
+            executor.submit(brute_force, args.url, user, password)
             for user in user_queue for password in password_queue[:attempts_limit]  # Лимит на количество попыток
         ]
 
